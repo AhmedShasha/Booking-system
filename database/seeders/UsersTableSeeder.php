@@ -21,13 +21,13 @@ class UsersTableSeeder extends Seeder
         ]);
 
         // Create providers
-        User::factory(10)->create([
+        User::factory(3)->create([
             'role' => 'provider',
             'timezone' => fake()->timezone,
         ]);
 
         // Create customers
-        User::factory(50)->create([
+        User::factory(10)->create([
             'role' => 'customer',
             'timezone' => fake()->timezone,
         ]);
