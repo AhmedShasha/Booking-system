@@ -4,12 +4,12 @@
 namespace App\Http\Controllers\API;
 
 use App\Enums\RoleEnum;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -20,13 +20,14 @@ class AuthController extends Controller
         $this->middleware('auth:sanctum')->only('logout');
     }
 
-    public function register(RegisterRequest $request): JsonResponse
+    private function registerWithRole(RegisterRequest $request, RoleEnum $role): JsonResponse
     {
         $validated = $request->validated();
-        
+
         $user = User::create([
             ...$validated,
-            'role' => $validated['role'] ?? RoleEnum::CUSTOMER->value,
+            'password' => Hash::make($validated['password']), // Ensure password is hashed
+            'role' => $role->value,
             'timezone' => $validated['timezone'] ?? config('app.timezone'),
         ]);
 
@@ -37,18 +38,35 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user' => new UserResource($user)
         ], 201);
+}
+
+    public function registerCustomer(RegisterRequest $request): JsonResponse
+    {
+        return $this->registerWithRole($request, RoleEnum::CUSTOMER);
+    }
+
+    public function registerProvider(RegisterRequest $request): JsonResponse
+    {
+        return $this->registerWithRole($request, RoleEnum::PROVIDER);
+    }
+
+
+    public function registerAdmin(RegisterRequest $request): JsonResponse
+    {
+        return $this->registerWithRole($request, RoleEnum::ADMIN);
     }
 
     public function login(LoginRequest $request): JsonResponse
     {
         try {
-            if (!Auth::attempt($request->only('email', 'password'))) {
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
                     'message' => 'Invalid login credentials'
                 ], 401);
             }
 
-            $user = User::where('email', $request->email)->firstOrFail();
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
@@ -69,7 +87,7 @@ class AuthController extends Controller
     {
         try {
             $currentToken = Auth::user()->currentAccessToken();
-            
+
             if (!$currentToken) {
                 return response()->json([
                     'message' => 'No active token found'
