@@ -2,10 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\Role;
-use App\Enums\RoleEnum;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
@@ -31,16 +28,9 @@ class RegisterRequest extends FormRequest
             ],
             'password' => [
                 'required',
-                'confirmed',
-                Password::min(8)
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-            ],
-            'role' => [
-                'sometimes',
                 'string',
-                'in:' . implode(',', RoleEnum::values())
+                'min:8',
+                'confirmed'
             ],
             'timezone' => [
                 'sometimes',
