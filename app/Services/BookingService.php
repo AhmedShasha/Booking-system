@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Services;
 
 use App\Enums\BookingStatus;
@@ -10,6 +9,8 @@ use App\Exceptions\TimeSlotNotAvailableException;
 use App\Models\Booking;
 use App\Models\Service;
 use Carbon\Carbon;
+use Carbon\CarbonInterval;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -35,15 +36,8 @@ class BookingService
                 throw new BookingValidationException('Service is not available for booking');
             }
 
-            $providerTimezone = $service->provider->getTimezone();
-            
-            $startTime = Carbon::parse($data['start_time'])
-                ->setTimezone($providerTimezone)
-                ->startOfMinute();
-                
-            $endTime = $startTime->copy()
-                ->addMinutes($service->duration)
-                ->startOfMinute();
+            $startTime = Carbon::parse($data['start_time'])->setTimezone($service->provider->timezone);
+            $endTime = $startTime->copy()->addMinutes($service->duration);
 
             $this->validateTimeSlot($service, $startTime, $endTime);
 
@@ -59,6 +53,36 @@ class BookingService
 
             return $booking;
         });
+    }
+
+    private function validateTimeSlot(Service $service, Carbon $startTime, Carbon $endTime): void
+    {
+        if ($startTime->isPast()) {
+            throw new BookingValidationException('Cannot book in the past');
+        }
+
+        $isAvailable = $service->availabilities()
+            ->where(function ($query) use ($startTime) {
+                $query->where('day_of_week', strtolower($startTime->format('l')))
+                    ->orWhere('override_date', $startTime->toDateString());
+            })
+            ->exists();
+
+        if (!$isAvailable) {
+            throw new TimeSlotNotAvailableException('Provider is not available at this time');
+        }
+
+        $overlappingBooking = $service->bookings()
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query->whereBetween('start_time', [$startTime, $endTime])
+                    ->orWhereBetween('end_time', [$startTime, $endTime]);
+            })
+            ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
+            ->exists();
+
+        if ($overlappingBooking) {
+            throw new TimeSlotNotAvailableException('Time slot is already booked');
+        }
     }
 
     public function updateStatus(Booking $booking, BookingStatus $newStatus): Booking
@@ -80,38 +104,6 @@ class BookingService
     private function isValidTransition(BookingStatus $currentStatus, BookingStatus $newStatus): bool
     {
         return in_array($newStatus, $this->validTransitions[$currentStatus->value] ?? []);
-    }
-
-    private function validateTimeSlot(Service $service, Carbon $startTime, Carbon $endTime): void
-    {
-        if ($startTime->isPast()) {
-            throw new BookingValidationException('Cannot book in the past');
-        }
-
-        $dayOfWeek = strtolower($startTime->format('l'));
-
-        $isAvailable = $service->availabilities()
-            ->where(function ($query) use ($dayOfWeek, $startTime) {
-                $query->where('day_of_week', $dayOfWeek)
-                    ->orWhere('override_date', $startTime->toDateString());
-            })
-            ->exists();
-
-        if (!$isAvailable) {
-            throw new TimeSlotNotAvailableException('Provider is not available at this time');
-        }
-
-        $overlappingBooking = $service->bookings()
-            ->where(function ($query) use ($startTime, $endTime) {
-                $query->whereBetween('start_time', [$startTime, $endTime])
-                    ->orWhereBetween('end_time', [$startTime, $endTime]);
-            })
-            ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
-            ->exists();
-
-        if ($overlappingBooking) {
-            throw new TimeSlotNotAvailableException('Time slot is already booked');
-        }
     }
 
     public function getAvailableSlots(Service $service, string $date): array

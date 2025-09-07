@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Routing\Controller;
 use App\Services\ReportingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

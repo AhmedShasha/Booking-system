@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\BookingStatus;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Http\Resources\BookingResource;
@@ -12,6 +11,7 @@ use App\Models\Service;
 use App\Services\BookingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
 
 class BookingController extends Controller
@@ -55,7 +55,7 @@ class BookingController extends Controller
     {
         Gate::authorize('update', $booking);
 
-        $this->bookingService->updateBookingStatus($booking, BookingStatus::CONFIRMED);
+        $this->bookingService->updateStatus($booking, BookingStatus::CONFIRMED);
         $booking->fresh();
 
         return response()->json([
@@ -68,7 +68,7 @@ class BookingController extends Controller
     {
         Gate::authorize('update', $booking);
 
-        $this->bookingService->updateBookingStatus($booking, BookingStatus::CANCELLED);
+        $this->bookingService->updateStatus($booking, BookingStatus::CANCELLED);
         $booking->fresh();
 
         return response()->json([
