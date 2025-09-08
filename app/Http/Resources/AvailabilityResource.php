@@ -16,15 +16,12 @@ class AvailabilityResource extends JsonResource
         return [
             'id' => $this->id,
             'day_of_week' => $this->day_of_week,
-            'start_time' => $this->start_time,
-            'end_time' => $this->end_time,
+            'start_time' => $this->start_time->format('H:i'),
+            'end_time' => $this->end_time->format('H:i'),
             'recurring' => $this->recurring,
             'start_date' => $this->start_date?->toDateString(),
             'end_date' => $this->end_date?->toDateString(),
-            'provider' => $this->whenLoaded('provider', fn() => [
-                'id' => $this->provider->id,
-                'name' => $this->provider->name,
-            ]),
+            'service' => $this->whenLoaded('service', fn() => new ServiceResource($this->service)),
         ];
     }
 }

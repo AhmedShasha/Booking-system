@@ -29,8 +29,7 @@ class UpdateAvailabilityRequest extends FormRequest
             'end_time' => [
                 'sometimes',
                 'date_format:H:i',
-                'after:start_time',
-                new MaxAvailabilityDuration($this->start_time)
+                new MaxAvailabilityDuration($this->start_time ?? '')
             ],
             'recurring' => [
                 'sometimes', 

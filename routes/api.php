@@ -30,12 +30,7 @@ Route::group(['middleware' => ['api']], function () {
         Route::get('services/{service}', [ServiceController::class, 'show']);
         
         // Availabilities routes
-        Route::middleware(['auth:sanctum'])->group(function () {
-            Route::get('availabilities/next-week', [AvailabilityController::class, 'getNextWeekAvailability']);
-            Route::get('availabilities/time-slots', [AvailabilityController::class, 'getTimeSlots']);
-            Route::post('availabilities/bulk', [AvailabilityController::class, 'bulkUpdate']);
-            Route::apiResource('availabilities', AvailabilityController::class);
-        });
+        Route::apiResource('availabilities', AvailabilityController::class);
         
         // Bookings routes
         Route::middleware(['throttle:booking'])->group(function () {

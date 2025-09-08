@@ -14,7 +14,7 @@ class AvailabilityPolicy
 
     public function view(User $user, Availability $availability): bool
     {
-        return $availability->provider_id === $user->id || $user->isAdmin();
+        return $availability->service->provider_id === $user->id || $user->isAdmin();
     }
 
     public function create(User $user): bool
@@ -24,18 +24,18 @@ class AvailabilityPolicy
 
     public function update(User $user, Availability $availability): bool
     {
-        return $availability->provider_id === $user->id || $user->isAdmin();
+        return $availability->service->provider_id === $user->id || $user->isAdmin();
     }
 
     public function delete(User $user, Availability $availability): bool
     {
         // Only allow if no future bookings depend on this availability
-        $noFutureBookings = !$availability->provider->bookings()
+        $noFutureBookings = !$availability->service->provider->bookings()
             ->where('start_time', '>', now())
             ->whereIn('status', ['pending', 'confirmed'])
             ->exists();
 
-        return ($availability->provider_id === $user->id && $noFutureBookings) || $user->isAdmin();
+        return ($availability->service->provider_id === $user->id && $noFutureBookings) || $user->isAdmin();
     }
 
     public function bulkUpdate(User $user): bool

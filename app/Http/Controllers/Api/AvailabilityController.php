@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Enums\RoleEnum;
 use App\Http\Requests\BulkUpdateAvailabilityRequest;
 use App\Http\Requests\StoreAvailabilityRequest;
 use App\Http\Requests\UpdateAvailabilityRequest;
 use App\Http\Resources\AvailabilityResource;
 use App\Models\Availability;
 use App\Services\AvailabilityService;
-use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class AvailabilityController extends Controller
@@ -27,7 +28,9 @@ class AvailabilityController extends Controller
 
     public function index(): JsonResponse
     {
-        $availabilities = $this->user->availabilities;
+        // Admins can see all availabilities, providers only their own
+        $availabilities = $this->user->isAdmin() ?  Availability::all() : $this->user->availabilities;
+        $availabilities->load('service.provider','service.bookings');
 
         return response()->json([
             'data' => AvailabilityResource::collection($availabilities)
@@ -49,6 +52,7 @@ class AvailabilityController extends Controller
     public function show(Availability $availability): JsonResponse
     {
         Gate::authorize('view', $availability);
+        $availability->load('service.provider','service.bookings');
 
         return response()->json([
             'data' => new AvailabilityResource($availability)

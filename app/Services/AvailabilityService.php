@@ -70,7 +70,7 @@ class AvailabilityService
      */
     public function hasFutureBookings(Availability $availability): bool
     {
-        $provider = $availability->provider;
+        $provider = $availability->service->provider;
 
         return $provider->bookings()
             ->where(function ($query) use ($availability) {

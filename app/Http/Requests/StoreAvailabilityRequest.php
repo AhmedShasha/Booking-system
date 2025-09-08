@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Http\Requests;
 
@@ -6,6 +6,7 @@ use App\Enums\DayOfWeek;
 use App\Rules\MaxAvailabilityDuration;
 use App\Rules\MaxAvailabilityRange;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class StoreAvailabilityRequest extends FormRequest
@@ -18,6 +19,12 @@ class StoreAvailabilityRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'service_id' => [
+                'required',
+                'exists:services,id',
+                Rule::exists('services', 'id')
+                    ->where('provider_id', Auth::id())
+            ],
             'day_of_week' => [
                 'required',
                 Rule::in(DayOfWeek::values())
@@ -26,7 +33,6 @@ class StoreAvailabilityRequest extends FormRequest
             'end_time' => [
                 'required',
                 'date_format:H:i',
-                'after:start_time',
                 new MaxAvailabilityDuration($this->start_time)
             ],
             'recurring' => ['sometimes', 'boolean'],
