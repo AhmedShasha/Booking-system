@@ -8,6 +8,7 @@ use App\Exceptions\BookingValidationException;
 use App\Exceptions\TimeSlotNotAvailableException;
 use App\Models\Booking;
 use App\Models\Service;
+use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Carbon\CarbonPeriod;
@@ -40,7 +41,7 @@ class BookingService
         }
     }
 
-    public function createBooking($start_time, $service, $user): Booking
+    public function createBooking($start_time, Service $service, User $user): Booking
     {
         return DB::transaction(function () use ($start_time, $service, $user) {
             
