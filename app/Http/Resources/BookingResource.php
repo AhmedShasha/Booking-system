@@ -16,12 +16,9 @@ class BookingResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
-            'service_id' => $this->service_id,
-            'provider_id' => $this->provider_id,
             'status' => $this->status,
-            'date' => $this->date,
-            'time' => $this->time,
+            'start_time' => $this->start_time->format('Y-m-d H:i'),
+            'end_time' => $this->end_time->format('Y-m-d H:i'),
             'user' => new UserResource($this->whenLoaded('user')),
             'service' => new ServiceResource($this->whenLoaded('service')),
             'provider' => new UserResource($this->whenLoaded('provider')),

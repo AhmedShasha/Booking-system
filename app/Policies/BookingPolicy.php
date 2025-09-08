@@ -8,59 +8,38 @@ use Illuminate\Auth\Access\Response;
 
 class BookingPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->isProvider() || $user->isAdmin();
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Booking $booking): bool
     {
-        return false;
+        return $booking->service->provider_id === $user->id || $booking->user_id === $user->id || $user->isAdmin();
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isCustomer() || $user->isAdmin();
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Booking $booking): bool
+    public function confirm(User $user, Booking $booking): bool
     {
-        return false;
+        return $booking->service->provider_id === $user->id || $user->isAdmin();
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
+    public function cancel(User $user, Booking $booking): bool
+    {
+        return $booking->service->provider_id === $user->id || $booking->user->id === $user->id || $user->isAdmin();
+    }
+
     public function delete(User $user, Booking $booking): bool
     {
-        return false;
-    }
+        // Only allow if no future bookings depend on this Booking
+        $noFutureBookings = !$booking->where('start_time', '>', now())
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->exists();
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Booking $booking): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Booking $booking): bool
-    {
-        return false;
+        return ( $booking->user_id === $user->id || $booking->service->provider_id === $user->id && $noFutureBookings) || $user->isAdmin();
     }
 }

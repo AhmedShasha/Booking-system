@@ -27,22 +27,34 @@ class BookingService
         ]
     ];
 
-    public function createBooking(array $data): Booking
+    public function getUserBookings($user)
     {
-        return DB::transaction(function () use ($data) {
-            $service = Service::findOrFail($data['service_id']);
+        if ($user->isProvider()) {
+            return Booking::whereHas('service', function ($query) use ($user) {
+                $query->where('provider_id', $user->id);
+            })->with(['service', 'user'])->get();
+        } else {
+            return Booking::where('user_id', $user->id)
+                ->with(['service', 'service.provider'])
+                ->get();
+        }
+    }
+
+    public function createBooking($start_time, $service, $user): Booking
+    {
+        return DB::transaction(function () use ($start_time, $service, $user) {
             
             if (!$service->is_published) {
                 throw new BookingValidationException('Service is not available for booking');
             }
 
-            $startTime = Carbon::parse($data['start_time'])->setTimezone($service->provider->timezone);
+            $startTime = Carbon::parse($start_time)->setTimezone($service->provider->timezone);
             $endTime = $startTime->copy()->addMinutes($service->duration);
 
             $this->validateTimeSlot($service, $startTime, $endTime);
 
             $booking = Booking::create([
-                'user_id' => Auth::id(),
+                'user_id' => $user->id,
                 'service_id' => $service->id,
                 'start_time' => $startTime,
                 'end_time' => $endTime,

@@ -33,13 +33,11 @@ Route::group(['middleware' => ['api']], function () {
         Route::apiResource('availabilities', AvailabilityController::class);
         
         // Bookings routes
-        Route::middleware(['throttle:booking'])->group(function () {
-            Route::post('/bookings', [BookingController::class, 'store']);
-            Route::get('/services/{service}/available-slots', [BookingController::class, 'getAvailableSlots']);
-            Route::put('/bookings/{booking}/status', [BookingController::class, 'updateStatus']);
-        });
-        Route::apiResource('bookings', BookingController::class)
-            ->only(['index', 'show', 'update', 'destroy']);
+        // Route::post('/bookings', [BookingController::class, 'store']);
+        Route::get('/services/{service}/available-slots', [BookingController::class, 'availableSlots']);
+        Route::put('/bookings/{booking}/status', [BookingController::class, 'updateStatus']);
+        Route::apiResource('bookings', BookingController::class)->except('update');
+
         Route::post('bookings/{booking}/confirm', [BookingController::class, 'confirm']);
         Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel']);
         
