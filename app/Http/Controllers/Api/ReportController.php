@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Resources\BookingResource;
 use Illuminate\Routing\Controller;
 use App\Services\ReportingService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,7 +25,7 @@ class ReportController extends Controller
         $bookings = $this->reportingService->getBookingsReport($filters);
 
         return response()->json([
-            'data' => $bookings
+            'data' => BookingResource::Collection($bookings)
         ]);
     }
 
@@ -33,7 +35,7 @@ class ReportController extends Controller
         $rates = $this->reportingService->getCancellationRates($filters);
 
         return response()->json([
-            'data' => $rates
+            'data' => round($rates, 2)
         ]);
     }
 

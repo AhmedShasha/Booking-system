@@ -31,6 +31,48 @@ class ReportingService
         return $query->get();
     }
 
+    public function getCancellationRates(array $filters = [])
+    {
+        $totalBookings = Booking::when(isset($filters['provider_id']), function ($q) use ($filters) {
+                $q->whereHas('service', function ($q) use ($filters) {
+                    $q->where('provider_id', $filters['provider_id']);
+                });
+            })
+            ->when(isset($filters['service_id']), function ($q) use ($filters) {
+                $q->where('service_id', $filters['service_id']);
+            })
+            ->when(isset($filters['date_from']), function ($q) use ($filters) {
+                $q->where('start_time', '>=', $filters['date_from']);
+            })
+            ->when(isset($filters['date_to']), function ($q) use ($filters) {
+                $q->where('start_time', '<=', $filters['date_to']);
+            })
+            ->count();
+
+        $canceledBookings = Booking::when(isset($filters['provider_id']), function ($q) use ($filters) {
+                $q->whereHas('service', function ($q) use ($filters) {
+                    $q->where('provider_id', $filters['provider_id']);
+                });
+            })
+            ->when(isset($filters['service_id']), function ($q) use ($filters) {
+                $q->where('service_id', $filters['service_id']);
+            })
+            ->when(isset($filters['date_from']), function ($q) use ($filters) {
+                $q->where('start_time', '>=', $filters['date_from']);
+            })
+            ->when(isset($filters['date_to']), function ($q) use ($filters) {
+                $q->where('start_time', '<=', $filters['date_to']);
+            })
+            ->where('status', BookingStatus::CANCELLED->value)
+            ->count();
+
+        if ($totalBookings === 0) {
+            return 0;
+        }
+
+        return ($canceledBookings / $totalBookings) * 100;
+    }
+
     public function getPeakHours(array $filters = [])
     {
         return DB::table('bookings')
@@ -39,5 +81,27 @@ class ReportingService
             ->groupBy('hour')
             ->orderBy('count', 'desc')
             ->get();
+    }
+
+    public function getAverageDuration(array $filters = [])
+    {
+        $query = Booking::select(DB::raw('AVG(TIMESTAMPDIFF(MINUTE, start_time, end_time)) as average_duration'))
+            ->where('status', BookingStatus::COMPLETED->value)
+            ->when(isset($filters['provider_id']), function ($q) use ($filters) {
+                $q->whereHas('service', function ($q) use ($filters) {
+                    $q->where('provider_id', $filters['provider_id']);
+                });
+            })
+            ->when(isset($filters['service_id']), function ($q) use ($filters) {
+                $q->where('service_id', $filters['service_id']);
+            })
+            ->when(isset($filters['date_from']), function ($q) use ($filters) {
+                $q->where('start_time', '>=', $filters['date_from']);
+            })
+            ->when(isset($filters['date_to']), function ($q) use ($filters) {
+                $q->where('start_time', '<=', $filters['date_to']);
+            });
+
+        return $query->value('average_duration');
     }
 }
